@@ -18,6 +18,7 @@
 <style>
 body{margin:0;font-family:Cairo,system-ui,sans-serif;background:#f7f3f1;color:#2b2522}
 [hidden]{display:none!important}
+#ios{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:linear-gradient(160deg,#b83a3a 0%,#8f2a2a 45%,#f7f3f1 45%)}
 #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:linear-gradient(160deg,#b83a3a 0%,#8f2a2a 45%,#f7f3f1 45%)}
 .lc{background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(80,30,20,.18);padding:26px 22px;width:100%;max-width:380px;text-align:center}
 .logo{width:62px;height:62px;border-radius:50%;background:#b83a3a;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:21px}
@@ -29,6 +30,7 @@ body{margin:0;font-family:Cairo,system-ui,sans-serif;background:#f7f3f1;color:#2
 .lc button:disabled{opacity:.6}
 #msg{min-height:22px;margin-top:12px;font-size:14px;color:#b83a3a;font-weight:600}
 .note{margin-top:10px;font-size:12.5px;color:#7a6f6a}
+#who{position:absolute;right:10px;top:12px;z-index:50;color:#fff;font-size:12px;font-weight:700;max-width:96px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}
 #out{position:absolute;left:10px;top:10px;z-index:50;border:1px solid rgba(255,255,255,.45);border-radius:20px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:4px 12px;cursor:pointer}
 #wm{position:fixed;left:10px;bottom:10px;z-index:40;pointer-events:none;width:84px;height:84px;border:2.5px double #b83a3a;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#b83a3a;opacity:.55;transform:rotate(-12deg);background:rgba(255,255,255,.6);text-align:center}
 #wm b{font-size:19px;line-height:1}#wm span{font-size:8.5px;font-weight:700;margin-top:3px;line-height:1.2;white-space:nowrap}
@@ -78,6 +80,8 @@ window.APP_HOSTS = [];
 </script>
 </head>
 <body>
+<div id="ios" hidden><div class="lc" style="text-align:center"><div style="font-size:46px">📲</div><h2 style="margin:6px 0 10px">ثبّت التطبيق أولاً</h2>
+<p style="line-height:2;font-size:15.5px;text-align:right">1. اضغط زر <b>المشاركة</b> ⬆️ أسفل الشاشة في Safari.<br>2. اختر <b>إضافة إلى الشاشة الرئيسية</b>.<br>3. اضغط <b>إضافة</b>.<br>4. افتح التطبيق من أيقونة <b>«دليل التسوية»</b> وادخل بحسابك.</p></div></div>
 <div id="gate">
   <form class="lc" id="lf" autocomplete="on">
     <div class="logo">م ب</div>
@@ -94,13 +98,15 @@ window.APP_HOSTS = [];
 
 <script>
 document.addEventListener('DOMContentLoaded',function(){
+const iOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+if(iOS&&!(navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&typeof Android==='undefined'){document.getElementById('gate').hidden=true;document.getElementById('ios').hidden=false;return;}
 const bad=t=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99;background:#fff3e0;color:#7a4b00;padding:12px 16px;font:15px/1.7 system-ui,sans-serif;text-align:center;border-bottom:2px solid #f0c98a';d.textContent=t;document.body.appendChild(d);};
 if(typeof firebase==='undefined'){bad('تعذر تحميل مكتبة Google (Firebase): تحقق من الإنترنت، أو أوقف مانع الإعلانات / برنامج الحماية لهذا الموقع، ثم أعد تحميل الصفحة.');return;}
 if(typeof FIREBASE_CONFIG==='undefined'){bad('ملف config.js غير موجود أو فيه خطأ في الكتابة (علامة " أو فاصلة ناقصة).');return;}
 if(JSON.stringify(FIREBASE_CONFIG).includes('ضع_هنا')){bad('لم تُملأ إعدادات Firebase في ملف config.js بعد.');return;}
 (function(){
 firebase.initializeApp(FIREBASE_CONFIG);
-const APP_VERSION=6; // version of this installed app (compared with the version the admin publishes)
+const APP_VERSION=8; // version of this installed app (compared with the version the admin publishes)
 const auth=firebase.auth(), db=firebase.firestore();
 const SID=Math.random().toString(36).slice(2)+Date.now().toString(36);
 const $=id=>document.getElementById(id);
@@ -141,10 +147,18 @@ auth.onAuthStateChanged(async user=>{
     // one device at a time (the latest login wins) + world clock from the server
     const ref=db.collection('sessions').doc(user.uid);
     let dev='',did='';try{dev=Android.device();did=Android.did();}catch(_){const ua=navigator.userAgent,m=ua.match(/Android [\d.]+; ([^;)]+?)(?: Build|;|\))/);dev=m?m[1]:(/iPhone/.test(ua)?'iPhone':/iPad|Macintosh/.test(ua)&&navigator.maxTouchPoints>1?'iPad':/Windows/.test(ua)?'حاسوب Windows':/Mac/.test(ua)?'حاسوب Mac':'متصفح');try{did=localStorage.getItem('dlid');if(!did){did=Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);localStorage.setItem('dlid',did);}}catch(_){did=dev;}}
+    let fp=did;if(typeof Android==='undefined'){const z=[screen.width,screen.height,devicePixelRatio,navigator.hardwareConcurrency||0,navigator.maxTouchPoints||0,navigator.language,Intl.DateTimeFormat().resolvedOptions().timeZone,dev].join('|');let h=0;for(let i=0;i<z.length;i++)h=(h*31+z.charCodeAt(i))|0;fp='f'+(h>>>0).toString(36);}
     let prev={};try{const ps=await ref.get();prev=ps.exists?ps.data():{};}catch(_){}
     const FV=firebase.firestore.FieldValue,tag=dev+' ·'+String(did).slice(-4);
-    const upd={sid:SID,at:FV.serverTimestamp(),dev:dev,did:did,v:APP_VERSION,devs:FV.arrayUnion(tag)};
+    // account locked to its first phone: another phone is refused (teacher can allow a new phone)
+    if(prev.blocked){alertOut('هذا الحساب موقوف بسبب محاولات دخول من هواتف أخرى. تواصل مع الأستاذ.');return;}
+    if(prev.lock&&prev.lock!==did&&!(prev.lockFp&&prev.lockFp===fp)&&!prev.allowNew){
+      const t=(prev.tries||0)+1;
+      try{await ref.set({tries:FV.increment(1),lastTry:tag,lastTryAt:FV.serverTimestamp(),blocked:t>=3},{merge:true});}catch(_){}
+      alertOut(t>=3?'أُوقف هذا الحساب بسبب محاولات دخول من هواتف أخرى. تواصل مع الأستاذ.':'هذا الحساب مرتبط بهاتف آخر، ولا يمكن الدخول به من هذا الهاتف. إذا غيّرت هاتفك تواصل مع الأستاذ.');return;}
+    const upd={sid:SID,at:FV.serverTimestamp(),dev:dev,did:did,v:APP_VERSION,devs:FV.arrayUnion(tag),lock:did,lockFp:fp,lockDev:dev,allowNew:false};
     if(prev.did&&prev.did!==did){upd.switches=FV.increment(1);upd.prevDev=prev.dev||'';}
+    if(prev.allowNew)upd.tries=0;
     await ref.set(upd,{merge:true});
     const sv=await ref.get({source:'server'});if(sv.data()&&sv.data().at)off=sv.data().at.toMillis()-Date.now();
     unsub.push(ref.onSnapshot(s=>{const d=s.data();if(d&&d.sid!==SID)alertOut('تم الدخول بهذا الحساب من جهاز آخر، لذلك أُغلقت الجلسة هنا.');}));
@@ -169,6 +183,7 @@ function startApp(p,name){
   $('app').innerHTML=p.html;
   const sc=document.createElement('script');sc.textContent=p.js;document.body.appendChild(sc);
   const wm=document.createElement('div');wm.id='wm';wm.innerHTML='<b>م ب</b><span>الأستاذ مسلم بلعالم</span>';document.body.appendChild(wm);
+  const who=document.createElement('div');who.id='who';who.textContent='👤 '+name;document.body.appendChild(who);
   const b=document.createElement('button');b.id='out';b.textContent='خروج';b.onclick=()=>auth.signOut();document.body.appendChild(b);
   document.addEventListener('contextmenu',e=>e.preventDefault());
 }
