@@ -30,7 +30,7 @@ input.u{direction:ltr;text-align:left}
 .btn.g{background:var(--g)}.btn.s{background:#f1e7e4;color:var(--r)}.btn.k{background:var(--d)}.btn.o{background:var(--o)}
 .bts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bts .btn{margin-top:8px}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
 .tabs button{border:1px solid var(--l);background:#fff;border-radius:12px;padding:9px 2px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;line-height:1.4}
 .tabs button.on{background:var(--d);color:#fff;border-color:var(--d)}
 .hide{display:none!important}
@@ -41,6 +41,14 @@ input.u{direction:ltr;text-align:left}
 .st b{display:block;font-size:19px}.st small{color:var(--m);font-size:12px}
 .usr{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--l);cursor:pointer}
 .usr:last-child{border:0}
+.bn2{display:flex;gap:6px;align-items:center;margin-top:6px}.bn2 input{flex:1}.bn2 b{width:22px;color:var(--m);text-align:center}
+.bres{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.bres td{border-bottom:1px solid var(--l);padding:6px 3px}
+#prt{display:none}
+@media print{body{background:#fff!important;padding:0!important}body>*:not(#prt){display:none!important}#prt{display:block!important}@page{size:A4;margin:8mm}
+ .pg{display:grid;grid-template-columns:1fr 1fr;gap:4mm;page-break-after:always}
+ .cd{border:1.5px dashed #999;border-radius:3mm;padding:3mm;height:52mm;box-sizing:border-box;display:flex;gap:2mm;font-family:Cairo,sans-serif;direction:rtl;break-inside:avoid}
+ .cd .i{flex:1;font-size:10.5pt;line-height:1.55}.cd .i h4{margin:0 0 1mm;font-size:11pt;color:#b83a3a}.cd .i b{font-family:monospace;font-size:12pt;direction:ltr;unicode-bidi:embed}
+ .cd .q{display:flex;flex-direction:column;gap:1mm;align-items:center;font-size:7pt;text-align:center}.cd .q img{width:19mm;height:19mm;image-rendering:pixelated}}
 .tag.t{background:#fff3d6;color:#a8670a}
 .usr .i{flex:1;min-width:0}
 .usr .i b{display:block}.usr .i small{color:var(--m);font-size:12.5px}
@@ -115,7 +123,7 @@ window.APP_HOSTS = [];
 <main>
   <div class="st"><div><b id="s1">0</b><small>مفعّل</small></div><div><b id="s2">0</b><small>منتهٍ</small></div><div><b id="s3">0</b><small>موقوف</small></div><div><b id="s4">—</b><small>التطبيق</small></div></div>
   <div class="clock" id="clk"></div>
-  <div class="tabs"><button data-t="tU" class="on">التلاميذ</button><button data-t="tA">إضافة تلميذ</button><button data-t="tS">التوقيف والرسائل</button><button data-t="tP">الحاسبة والتحديث</button></div>
+  <div class="tabs"><button data-t="tU" class="on">التلاميذ</button><button data-t="tA">إضافة تلميذ</button><button data-t="tB">مجموعة</button><button data-t="tS">التوقيف والرسائل</button><button data-t="tP">الحاسبة والتحديث</button></div>
 
   <div id="tU" class="card tab">
     <input id="q" placeholder="🔍 بحث بالاسم أو اسم المستخدم">
@@ -141,7 +149,19 @@ window.APP_HOSTS = [];
     <div id="duw" class="hide"><label>تاريخ انتهاء الاشتراك</label><input id="dud" type="date"></div>
     <button class="btn g" id="add">✓ إنشاء الحساب</button>
     <div class="msg" id="am"></div>
+    <div style="font-size:12.5px;color:var(--m);margin-top:6px">اكتب الاسم فقط: اسم المستخدم وكلمة المرور يُولَّدان وحدهما (ويمكنك تعديلهما).</div>
   </div>
+  <div id="tB" class="card tab hide">
+    <h2>👥 إضافة مجموعة تلاميذ</h2>
+    <div style="font-size:13px;color:var(--m)">اكتب اسماً في كل خانة، واضغط «+ خانة» للمزيد. تُنشأ الحسابات كلها مرة واحدة ثم تطبع البطاقات.</div>
+    <div id="bl"></div>
+    <button class="btn s" id="badd">+ خانة</button>
+    <label>المدة للجميع</label><select id="bdu"></select>
+    <button class="btn g" id="bgo">✓ إنشاء كل الحسابات</button>
+    <div class="msg" id="bm"></div>
+    <div id="bres"></div>
+  </div>
+  <div id="prt"></div>
 
   <div id="tS" class="tab hide">
     <div class="card">
@@ -181,7 +201,7 @@ window.APP_HOSTS = [];
     <div class="card">
       <h2>📥 تحديث تطبيق التلاميذ (APK)</h2>
       <div style="color:var(--m);font-size:13.5px">نادر الحاجة. ضع ملف APK الجديد في Google Drive (مشاركة: أي شخص لديه الرابط)، والصق الرابط هنا مع رقم النسخة الجديدة. يظهر للتلاميذ زر "تحديث الآن".</div>
-      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="11" disabled></div></div>
+      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="12" disabled></div></div>
       <label>رابط التحميل</label><input id="au" class="u" placeholder="https://drive.google.com/...">
       <div class="bts"><button class="btn g" id="asave">نشر التحديث</button><button class="btn s" id="aclr">إلغاء</button></div>
       <div class="msg" id="am2"></div>
@@ -274,11 +294,14 @@ function openU(id,msg){
    (msg?'<div class="msg ok">'+msg+'</div>':'')+
    '<h3>تمديد الاشتراك</h3><div class="bts"><button class="btn s" data-x="d7">+ أسبوع</button><button class="btn s" data-x="m1">+ شهر</button><button class="btn s" data-x="m3">+ 3 أشهر</button><button class="btn s" data-x="sy">حتى نهاية السنة الدراسية</button></div>'+
    '<label>أو حدّد تاريخ الانتهاء</label><div class="row"><input type="date" id="ed"><button class="btn s" id="eds" style="margin-top:0">حفظ التاريخ</button></div>'+
+   '<h3>نوع الحساب</h3><div class="bts">'+(u.trial?'<button class="btn s" id="ttg">✅ تحويل إلى اشتراك (نفس التاريخ)</button>':'<button class="btn s" data-tr="t1">🎁 تجربة يوم</button><button class="btn s" data-tr="t3">🎁 تجربة 3 أيام</button><button class="btn s" data-tr="t7">🎁 تجربة أسبوع</button>')+'</div>'+
    '<h3>الحالة</h3><div class="bts"><button class="btn '+(u.active?'o':'g')+'" id="tg">'+(u.active?'⏸ إيقاف الحساب':'▶ تفعيل الحساب')+'</button><button class="btn s" id="del">🗑 حذف التلميذ</button></div>'+
    '<div class="msg err" id="shm"></div>';
   $('sheet').classList.remove('hide');
   $('shx').onclick=()=>$('sheet').classList.add('hide');
   $('cp').onclick=e=>copy(credText(u),e.target);
+  if($('ttg'))$('ttg').onclick=async()=>{await upd(u,{trial:false},'✔ صار اشتراكاً عادياً — مدّد المدة إن لزم');};
+  $('sh').querySelectorAll('[data-tr]').forEach(b=>b.onclick=async()=>{const d=addDur(now(),b.dataset.tr);await upd(u,{trial:true,active:true,exp:TS.fromDate(d)},'✔ صار فترة تجريبية حتى '+dmy(d));});
   $('sh2').onclick=()=>share(credText(u));
   $('sh').querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{const k=b.dataset.x,base=u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();
     const d=k==='sy'?syEnd():addDur(base,k);await upd(u,{exp:TS.fromDate(d),active:true,trial:false},'✔ صار صالحاً حتى '+dmy(d));});
@@ -302,6 +325,44 @@ document.addEventListener('click',async e=>{if(!e.target||e.target.id!=='anew'||
   catch(er){e.target.disabled=false;const m=$('shm');if(m)m.textContent='خطأ: '+(er.code||er.message);}});
 
 /* ---------- add student ---------- */
+const QR_A='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAB8AQAAAACDZekTAAABK0lEQVR4Xq1VsY3EMAyjguupDbL/WL8BNQEfdK65rw7Cu7ESwDRF0VIZH2uuz2/gix9TVaiZrj7hF0f+3vKCMePyCAk3GBemgNK4ecIFj3OEIFoPxS3GuDHvLFcYNNC60XXCBUapgXcaSLjAgG2LtKETLjCu6Z77B1XC1PQmF+R+KBwEUxsesCgGiaDAFYYgy2aYQDsMG0GJzWCu6nKhZE50ASPNoi6wkk0Kq1hso8cLuD3QjUGe3Y5HdIiaWV5qCpmkkkm2jR6RAylqiuOVHrBAnorErTuM4/RQSXPW7s3xOAt0hdKqJz99/U5xNCBXtY25LONsO489fZ3FaVRbGx6lp6MzA6LhzZx7ndnQY5ShXs2oo8fpyQTTRhY+vVDVOFbTdK/eXP3D3P8Fiw7GgDg1DIoAAAAASUVORK5CYII=',QR_I='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHwAAAB8AQAAAACDZekTAAABKElEQVR4Xq2VQW7FQAhDH1/dmxvM/Y+VG5gTUDH9m6qbinaiSCQSHjAYovl26vX9G37xoyKChIq45i9cft7S7SI48pg7jApUqno05g4DKJE6eWNc5PIxfno4z5Cyw3ihptCTp8fcxBFO8JvpMRe50Pf4PmMsMKY/KoJQkJm5yQXLknqogPYmDq6vGEInmyVGC2SblrTCcGuc5+1mFUd0iPK7x7pWnLZlqz3paBcHlhq7dTtky4c99W1dZpac9mX19rtX/TG6DSs45oA2s5Dpi2lWNz0JLfTyAR0cRBLUsrYj1qnu1GWn/a+5jirJGvUscmF01lNbs9Xca4Z5mSePI2u1X+5MJgckmz/sBp4g3RFow8ed60h1t4xWc/3OdA+QZHmll/iHvf8JUwTCXS08BcgAAAAASUVORK5CYII=';
+const NAMES={'محمد':'mohamed','أحمد':'ahmed','احمد':'ahmed','عبد':'abd','علي':'ali','عمر':'omar','يوسف':'youcef','ياسين':'yacine','إسلام':'islam','اسلام':'islam','أيوب':'ayoub','ايوب':'ayoub','حمزة':'hamza','إبراهيم':'brahim','ابراهيم':'brahim','خالد':'khaled','سفيان':'sofiane','رياض':'riad','نبيل':'nabil','مصطفى':'mustapha','عادل':'adel','أنس':'anes','انس':'anes','وليد':'walid','زكرياء':'zakaria','زكريا':'zakaria','بلال':'bilal','هشام':'hichem','أمين':'amine','امين':'amine','نور':'nour','الدين':'eddine','فاطمة':'fatima','عائشة':'aicha','مريم':'meriem','خديجة':'khadidja','سارة':'sara','أمينة':'amina','امينة':'amina','آية':'aya','اية':'aya','هبة':'hiba','إيمان':'imane','ايمان':'imane','أسماء':'asma','اسماء':'asma','رانيا':'rania','ياسمين':'yasmine','شيماء':'chaima','ملاك':'malak','نسرين':'nesrine','سلمى':'salma','زينب':'zineb','هاجر':'hadjer','رحمة':'rahma','دعاء':'douaa','منال':'manel','وفاء':'wafa','ليلى':'leila','حنان':'hanane','بن':'ben','بو':'bou','مسلم':'moslem','بلعالم':'belalem'};
+const TR={'ا':'a','أ':'a','إ':'i','آ':'a','ء':'','ؤ':'o','ئ':'i','ب':'b','ت':'t','ث':'th','ج':'dj','ح':'h','خ':'kh','د':'d','ذ':'d','ر':'r','ز':'z','س':'s','ش':'ch','ص':'s','ض':'d','ط':'t','ظ':'dh','ع':'a','غ':'gh','ف':'f','ق':'k','ك':'k','ل':'l','م':'m','ن':'n','ه':'h','ة':'a','و':'ou','ي':'i','ى':'a'};
+function trWord(w){if(NAMES[w])return NAMES[w];if(/^[a-z0-9]+$/i.test(w))return w.toLowerCase();let o='';[...w].forEach((ch,i)=>{if(ch==='و'&&i===0)o+='w';else if(ch==='ي'&&i===0)o+='y';else o+=TR[ch]!=null?TR[ch]:'';});return o.replace(/(.)\1{2,}/g,'$1$1');}
+function baseUser(nm){let ws=nm.trim().replace(/[^\u0600-\u06FFa-zA-Z0-9 ]/g,' ').split(/\s+/).filter(Boolean);if(!ws.length)return '';
+  // join "بن"/"بو"/"عبد"/"ال" with the next word
+  const out=[];for(let i=0;i<ws.length;i++){let w=trWord(ws[i]);if(['ben','bou','abd'].includes(w)&&ws[i+1]){w+=trWord(ws[i+1]);i++;}out.push(w);}
+  const u=(out.length>1?out[0]+'.'+out[out.length-1]:out[0]).replace(/[^a-z0-9.]/g,'');return u.length>=3?u:(u+'123').slice(0,4);}
+function uniqUser(nm,taken){const b=baseUser(nm)||'student';let u=b,i=2;while(users.some(x=>x.u===u)||(taken&&taken.has(u))){u=b+i;i++;}return u;}
+function mkPw(){const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<6;i++)s+=c[Math.floor(Math.random()*c.length)];return /\d/.test(s)?s:s.slice(0,5)+'7';}
+function expOf(k,dateV){if(k==='sy')return syEnd();if(k==='dt'){const p=(dateV||'').split('-');return p.length===3?new Date(+p[0],+p[1]-1,+p[2],23,59):null;}return addDur(now(),k);}
+async function createOne(nm,un,pw,k,exp){let u=un,tries=0;
+  for(;;){try{const cr=await sec.auth().createUserWithEmailAndPassword(u+'@'+USER_DOMAIN,pw);const uid=cr.user.uid;await sec.auth().signOut();
+      const doc={name:nm,u:u,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),created:SV()};await db.collection('users').doc(uid).set(doc);
+      const o=Object.assign({id:uid},doc,{created:TS.fromDate(now())});users.push(o);return o;}
+    catch(e){if(e.code==='auth/email-already-in-use'&&tries<8){tries++;u=un.replace(/\d+$/,'')+(tries+1);continue;}throw e;}}}
+// single form: generate from the name unless edited by hand
+['un','up'].forEach(id=>$(id).addEventListener('input',()=>$(id).dataset.man='1'));
+$('nm').addEventListener('input',()=>{const v=$('nm').value;if(!$('un').dataset.man)$('un').value=v.trim()?uniqUser(v):'';if(!$('up').dataset.man&&v.trim()&&!$('up').value)$('up').value=mkPw();});
+// batch
+$('bdu').innerHTML=$('du').innerHTML.replace(' selected','').replace('<option value="dt">تاريخ أختاره بنفسي</option>','');$('bdu').value='t3';
+function bRow(v){const n=$('bl').children.length+1,d=document.createElement('div');d.className='bn2';d.innerHTML='<b>'+n+'</b><input placeholder="الاسم الكامل">';if(v)d.querySelector('input').value=v;$('bl').appendChild(d);return d;}
+for(let i=0;i<3;i++)bRow();
+$('badd').onclick=()=>bRow().querySelector('input').focus();
+let lastBatch=[];
+$('bgo').onclick=async()=>{const names=[...$('bl').querySelectorAll('input')].map(i=>i.value.trim()).filter(Boolean),k=$('bdu').value,exp=expOf(k);
+  if(!names.length){say('bm',0,'اكتب اسماً واحداً على الأقل.');return;}
+  $('bgo').disabled=true;const taken=new Set(),done=[],bad=[];
+  for(let i=0;i<names.length;i++){say('bm',1,'جاري الإنشاء '+(i+1)+' / '+names.length+' ...');const un=uniqUser(names[i],taken);taken.add(un);
+    try{done.push(await createOne(names[i],un,mkPw(),k,exp));}catch(e){bad.push(names[i]+' ('+(e.code||e.message)+')');if(e.code==='auth/too-many-requests'){bad.push('توقف: حد Google لإنشاء الحسابات، أكمل بعد ساعة.');break;}}}
+  render();$('bgo').disabled=false;lastBatch=done;
+  say('bm',!bad.length,'✔ أُنشئ '+done.length+' حساب'+(bad.length?' — تعذّر: '+bad.join('، '):''));
+  $('bres').innerHTML=done.length?'<table class="bres">'+done.map(u=>'<tr><td>'+esc(u.name)+'</td><td dir="ltr">'+esc(u.u)+'</td><td dir="ltr">'+esc(u.pw)+'</td></tr>').join('')+'</table><div class="bts"><button class="btn g" id="bprint">🖨 طباعة البطاقات</button><button class="btn k" id="bcopy">📋 نسخ الكل</button></div>':'';
+  if(done.length){$('bprint').onclick=()=>printCards(done);$('bcopy').onclick=e=>copy(done.map(credText).join('\n\n'),e.target);}
+  if(!bad.length){$('bl').innerHTML='';for(let i=0;i<3;i++)bRow();}};
+function printCards(list){let h='',pg='';list.forEach((u,i)=>{pg+='<div class="cd"><div class="i"><h4>دليل التسوية — الأستاذ مسلم بلعالم</h4>'+esc(u.name)+'<br>اسم المستخدم: <b>'+esc(u.u)+'</b><br>كلمة المرور: <b>'+esc(u.pw)+'</b><br><small>'+(u.trial?'🎁 فترة تجريبية ':'')+'صالح حتى '+dmy(u.exp.toDate())+'</small></div><div class="q"><img src="'+QR_A+'">أندرويد<img src="'+QR_I+'">آيفون</div></div>';
+    if((i+1)%10===0||i===list.length-1){h+='<div class="pg">'+pg+'</div>';pg='';}});
+  const P=$('prt');if(P.parentNode!==document.body)document.body.appendChild(P);P.innerHTML=h;setTimeout(()=>{try{if(window.Android&&Android.print)Android.print();else window.print();}catch(e){window.print();}},300);}
 $('du').onchange=()=>$('duw').classList.toggle('hide',$('du').value!=='dt');
 $('gen').onclick=()=>{const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i<7;i++)s+=c[Math.floor(Math.random()*c.length)];$('up').value=s;};
 $('add').onclick=async()=>{
