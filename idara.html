@@ -303,12 +303,11 @@ function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Ma
   const B=(k,ic,l,c)=>'<button class="sb '+c+'" data-k="'+k+'">'+ic+' '+l+'<small>يصير حتى <span dir="ltr">'+dmy(subDate(u,k))+'</span></small></button>';
   const sub1=isSub(u);
   return '<div class="sst '+cls+'">'+tt+'<small>'+sub+'</small></div>'+
-    (u.undo&&u.undo.exp?'<button class="btn s" id="undo" style="margin:0 0 6px">↩ تراجع عن آخر تغيير (يرجع حتى <span dir="ltr">'+dmy(u.undo.exp.toDate())+'</span>)</button>':'')+
-    '<h3>'+(sub1?'تغيير المدة (تُحسب من بداية الاشتراك):':'اضغط زراً واحداً:')+'</h3><div class="sg">'+
+    '<h3>'+(sub1?'تصحيح المدة (من بداية الاشتراك):':'اضغط زراً واحداً:')+'</h3><div class="sg">'+
     B('t3','🎁','تجربة 3 أيام','y')+B('t7','🎁','تجربة أسبوع','y')+B('m1','✅','شهر','gr')+B('m3','✅','3 أشهر','gr')+B('m6','✅','6 أشهر','gr')+B('sy','✅','حتى نهاية السنة','gr')+
     '<button class="sb d" id="dk">📅 تاريخ آخر<small>اختر بنفسك</small></button></div>'+
     '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div>'+
-    (sub1?'<h3>🔁 تجديد (يُضاف بعد نهاية الاشتراك):</h3><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div>':'');}
+    (sub1?'<h3>🔁 تجديد:</h3><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div>':'');}
 function openU(id,msg){
   const u=users.find(x=>x.id===id);if(!u)return;cur=u;const s=state(u);
   if(!msg)db.collection('sessions').doc(id).get().then(d=>{if(d.exists){SS[id]=d.data();const o=$('dv');if(o)o.outerHTML=devHtml(u);render();}}).catch(()=>{});
@@ -325,13 +324,12 @@ function openU(id,msg){
   $('cp').onclick=e=>copy(credText(u),e.target);
   $('sh2').onclick=()=>share(credText(u));
   $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t',was=isSub(u);
-    const ch={exp:TS.fromDate(d),active:true,trial:tr,undo:{exp:u.exp||null,trial:!!u.trial,start:u.start||null,active:!!u.active}};
+    const ch={exp:TS.fromDate(d),active:true,trial:tr};
     if(!tr&&(!was||(k[0]==='m'&&addDur(startOf(u),k)<=now())))ch.start=TS.fromDate(now());
     await upd(u,ch,tr?'✔ صار تجريبياً حتى '+dmy(d):k[0]==='r'?'✔ جُدّد حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
   $('dk').onclick=()=>$('dkw').classList.toggle('hide');
-  if($('undo'))$('undo').onclick=async()=>{const o=u.undo,ch={exp:o.exp,trial:o.trial,active:o.active,undo:null};if(o.start)ch.start=o.start;await upd(u,ch,'↩ رجع كما كان: حتى '+dmy(o.exp.toDate()));};
   $('eds').onclick=async()=>{const v=$('ed').value;if(!v){$('shm').textContent='اختر تاريخاً.';return;}const p=v.split('-');const d=new Date(+p[0],+p[1]-1,+p[2],23,59);
-    const ch={exp:TS.fromDate(d),active:true,trial:false,undo:{exp:u.exp||null,trial:!!u.trial,start:u.start||null,active:!!u.active}};if(!isSub(u))ch.start=TS.fromDate(now());await upd(u,ch,'✔ صار مشتركاً حتى '+dmy(d));};
+    const ch={exp:TS.fromDate(d),active:true,trial:false};if(!isSub(u))ch.start=TS.fromDate(now());await upd(u,ch,'✔ صار مشتركاً حتى '+dmy(d));};
   $('tg').onclick=async()=>upd(u,{active:!u.active},u.active?'⏸ أُوقف الحساب (يُطرد التلميذ فوراً)':'▶ فُعّل الحساب');
   let dc=0;$('del').onclick=async e=>{if(!dc){dc=1;e.target.textContent='اضغط مرة أخرى للتأكيد';return;}
     e.target.disabled=true;e.target.textContent='جاري الحذف...';
