@@ -44,7 +44,7 @@ input.u{direction:ltr;text-align:left}
 .sst{border-radius:14px;padding:10px;text-align:center;font-weight:800;font-size:16px;margin:10px 0}.sst small{display:block;font-size:13px;font-weight:700;opacity:.85}
 .sst.t{background:#fff3d6;color:#8a5a00}.sst.a{background:#e5f4ea;color:#2f8f5b}.sst.e{background:#fbe9e7;color:#b83a3a}.sst.x{background:#eee;color:#555}
 .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sb{border:0;border-radius:14px;padding:9px 4px;font:inherit;font-weight:800;font-size:14px;line-height:1.45;cursor:pointer}
-.sb small{display:block;font-weight:700;font-size:11.5px;opacity:.8}.sb.y{background:#fff3d6;color:#8a5a00}.sb.gr{background:#e5f4ea;color:#2f8f5b}.sb.d{background:#eee;color:#555}.sb.bl{background:#e6effa;color:#2f6fb0}
+.sb small{display:block;font-weight:700;font-size:11.5px;opacity:.8}.sb.y{background:#fff3d6;color:#8a5a00}.sb.gr{background:#e5f4ea;color:#2f8f5b}.sb.d{background:#eee;color:#555}.sb.bl{background:#e6effa;color:#2f6fb0}.sb.big{font-size:16px;padding:13px 6px;background:#b83a3a;color:#fff}.sb.big.bl{background:#2f6fb0;color:#fff}.sb.big.d{background:#f4eeec;color:#5c514d}
 .bn2{display:flex;gap:6px;align-items:center;margin-top:6px}.bn2 input{flex:1}.bn2 b{width:22px;color:var(--m);text-align:center}
 .bres{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.bres td{border-bottom:1px solid var(--l);padding:6px 3px}
 #prt{display:none}
@@ -281,12 +281,13 @@ async function upd(u,data,msg){await db.collection('users').doc(u.id).update(dat
 
 function devHtml(u){const ss=SS[u.id];if(!ss||!ss.dev)return '<div id="dv"><h3>📱 الجهاز</h3><div style="color:#7a6f6a">لم يدخل التلميذ بعد.</div></div>';
   const n=(ss.devs||[]).length;
-  return '<div id="dv"><h3>📱 الجهاز</h3><div class="cred">الجهاز الحالي: <b>'+esc(ss.dev)+'</b><br>آخر دخول: '+(ss.at?dmyhm(ss.at.toDate()):'—')+
+  const wn=ss.blocked||ss.tries||n>1;
+  return '<div id="dv"><button class="sb big d" data-open="dvb" style="width:100%;margin-top:10px">📱 الجهاز'+(ss.blocked?' ⛔':wn?' ⚠️':'')+'</button><div id="dvb" class="hide"><div class="cred">الجهاز الحالي: <b>'+esc(ss.dev)+'</b><br>آخر دخول: '+(ss.at?dmyhm(ss.at.toDate()):'—')+
    (n>1?'<br><span style="color:#b83a3a;font-weight:800">⚠️ استُعمل الحساب في '+n+' أجهزة ('+(ss.switches||0)+' تغيير):</span><br>'+ss.devs.map(esc).join('<br>'):'<br>جهاز واحد فقط ✔')+
    '<br>🔒 الحساب مربوط بـ: <b>'+esc(ss.lockDev||ss.dev)+'</b>'+(ss.allowNew?'<br><span style="color:#2f8f5b;font-weight:800">✔ مسموح له بالدخول من هاتف جديد (في انتظار دخوله)</span>':'')+
    (ss.tries?'<br><span style="color:#b83a3a;font-weight:800">⚠️ محاولات دخول من هاتف آخر: '+ss.tries+(ss.lastTry?' (آخرها: '+esc(ss.lastTry)+')':'')+'</span>':'')+
    (ss.blocked?'<br><span style="color:#fff;background:#b83a3a;border-radius:8px;padding:1px 8px;font-weight:800">⛔ أُوقف تلقائياً بعد 3 محاولات</span>':'')+
-   '</div><button class="btn s" id="anew" style="margin-top:8px">📱 السماح بهاتف جديد'+(ss.blocked?' وإلغاء التوقيف':'')+'</button></div>';}
+   '</div><button class="btn s" id="anew" style="margin-top:8px">📱 السماح بهاتف جديد'+(ss.blocked?' وإلغاء التوقيف':'')+'</button></div></div>';}
 function toast(t){let d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2b2321;color:#fff;padding:10px 18px;border-radius:12px;z-index:99;font-weight:700';document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 function isSub(u){return u.active&&!u.trial&&u.exp&&u.exp.toDate()>now();}
 function startOf(u){return u.start?u.start.toDate():(u.created&&u.created.toDate?u.created.toDate():now());}
@@ -303,16 +304,17 @@ function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Ma
   const B=(k,ic,l,c)=>'<button class="sb '+c+'" data-k="'+k+'">'+ic+' '+l+'<small>يصير حتى <span dir="ltr">'+dmy(subDate(u,k))+'</span></small></button>';
   const sub1=isSub(u);
   return '<div class="sst '+cls+'">'+tt+'<small>'+sub+'</small></div>'+
-    '<h3>'+(sub1?'تصحيح المدة (من بداية الاشتراك):':'اضغط زراً واحداً:')+'</h3><div class="sg">'+
+    '<div class="sg" style="margin-bottom:8px"><button class="sb big" data-open="spe">✏️ '+(sub1?'تعديل الاشتراك':'تفعيل / تجربة')+'</button>'+(sub1?'<button class="sb big bl" data-open="spr">🔁 تجديد</button>':'')+'</div>'+
+    '<div id="spe" class="hide"><div class="sg">'+
     B('t3','🎁','تجربة 3 أيام','y')+B('t7','🎁','تجربة أسبوع','y')+B('m1','✅','شهر','gr')+B('m3','✅','3 أشهر','gr')+B('m6','✅','6 أشهر','gr')+B('sy','✅','حتى نهاية السنة','gr')+
     '<button class="sb d" id="dk">📅 تاريخ آخر<small>اختر بنفسك</small></button></div>'+
-    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div>'+
-    (sub1?'<h3>🔁 تجديد:</h3><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div>':'');}
+    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div></div>'+
+    (sub1?'<div id="spr" class="hide"><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div></div>':'');}
 function openU(id,msg){
   const u=users.find(x=>x.id===id);if(!u)return;cur=u;const s=state(u);
   if(!msg)db.collection('sessions').doc(id).get().then(d=>{if(d.exists){SS[id]=d.data();const o=$('dv');if(o)o.outerHTML=devHtml(u);render();}}).catch(()=>{});
   $('sh').innerHTML='<button class="x" id="shx">×</button><h2>'+esc(u.name||u.u)+' <span class="tag '+s+'">'+SL[s]+'</span>'+(u.trial?' <span class="tag t">🎁 تجريبي</span>':'')+'</h2>'+
-   '<div class="cred">اسم المستخدم: <span>'+esc(u.u)+'</span><br>كلمة المرور: <span>'+(u.pw?esc(u.pw):'غير محفوظة')+'</span><br>صالح حتى: '+(u.exp?dmy(u.exp.toDate()):'—')+' '+left(u)+'<br>أُنشئ: '+(u.created?dmy(u.created.toDate()):'—')+'</div>'+
+   '<div class="cred">اسم المستخدم: <span>'+esc(u.u)+'</span><br>كلمة المرور: <span>'+(u.pw?esc(u.pw):'غير محفوظة')+'</span><br>أُنشئ: '+(u.created?dmy(u.created.toDate()):'—')+'</div>'+
    '<div class="bts"><button class="btn k" id="cp">📋 نسخ المعلومات</button><button class="btn g" id="sh2">📤 مشاركة (واتساب)</button></div>'+
    (msg?'<div class="msg ok">'+msg+'</div>':'')+
    subHtml(u)+
@@ -342,6 +344,8 @@ function openU(id,msg){
     }catch(er){e.target.disabled=false;e.target.textContent='🗑 حذف التلميذ';$('shm').textContent='تعذر الحذف: '+(er.code||er.message);}};
 }
 $('sheet').onclick=e=>{if(e.target.id==='sheet')$('sheet').classList.add('hide');};
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-open]');if(!b)return;const el=$(b.dataset.open);if(!el)return;
+  const op=el.classList.contains('hide');['spe','spr'].forEach(i=>{if(i!==b.dataset.open&&$(i)&&b.dataset.open!=='dvb')$(i).classList.add('hide');});el.classList.toggle('hide',!op);});
 // allow the student to log in from a new phone (also lifts the automatic stop)
 document.addEventListener('click',async e=>{if(!e.target||e.target.id!=='anew'||!cur)return;const u=cur;e.target.disabled=true;
   try{await db.collection('sessions').doc(u.id).set({allowNew:true,tries:0,blocked:false},{merge:true});SS[u.id]=Object.assign(SS[u.id]||{},{allowNew:true,tries:0,blocked:false});render();openU(u.id,'✔ يستطيع التلميذ الآن الدخول من هاتفه الجديد (ويُغلق القديم).');}
