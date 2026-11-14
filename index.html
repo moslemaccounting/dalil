@@ -34,11 +34,12 @@ body{margin:0;font-family:Cairo,system-ui,sans-serif;background:#f7f3f1;color:#2
 #who{position:absolute;right:10px;top:12px;z-index:50;color:#fff;font-size:12px;font-weight:700;max-width:96px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}
 #out{position:absolute;left:10px;top:10px;z-index:50;border:1px solid rgba(255,255,255,.45);border-radius:20px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:4px 12px;cursor:pointer}
 #wm{position:fixed;left:10px;bottom:10px;z-index:40;pointer-events:none;width:84px;height:84px;border:2.5px double #b83a3a;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#b83a3a;opacity:.55;transform:rotate(-12deg);background:rgba(255,255,255,.6);text-align:center}
-#wm b{font-size:19px;line-height:1}#wm span{font-size:8.5px;font-weight:700;margin-top:3px;line-height:1.2;white-space:nowrap}
+#wm b{font-size:19px;line-height:1}#wm span{font-size:9px;font-weight:800;margin-top:2px;line-height:1.15}
 .loading{padding:60px 20px;text-align:center;color:#7a6f6a}
 #lock{position:fixed;inset:0;z-index:200;background:rgba(43,37,34,.96);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px}
 #lock[hidden]{display:none}
 #lock h2{margin:8px 0;font-size:22px}#lock p{font-size:16px;line-height:1.8;opacity:.9}
+#ct{margin-top:14px;padding:12px;border-radius:14px;background:#fbf3f2;text-align:center}.ctm{font-size:14px;font-weight:700;color:#5c514d}.ctn{font-size:20px;font-weight:800;color:#b83a3a;margin:4px 0 8px;letter-spacing:1px}.ctb{display:flex;gap:8px}.ctb a{flex:1;padding:10px;border-radius:12px;font-weight:800;text-decoration:none;color:#fff;font-size:15px}.ca{background:#b83a3a}.cw{background:#25d366}
 #tbar~#out{top:44px}#tbar~#who{top:46px}
 #tbar{background:#2f8f5b;color:#fff;text-align:center;font-size:13.5px;font-weight:800;padding:7px 10px;position:relative;z-index:60}
 .bn{position:fixed;left:10px;right:10px;z-index:150;border-radius:14px;padding:10px 40px 10px 14px;font-size:14.5px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.18);line-height:1.7}
@@ -95,6 +96,7 @@ window.APP_HOSTS = [];
     <button id="bt">دخول</button>
     <div id="msg"></div>
     <div class="note">للحصول على حساب تواصل مع الأستاذ مسلم بلعالم</div>
+    <div id="ct" hidden></div>
   </form>
 </div>
 <div id="app" hidden><div class="loading">جاري التحميل...</div></div>
@@ -109,7 +111,7 @@ if(typeof FIREBASE_CONFIG==='undefined'){bad('ملف config.js غير موجود
 if(JSON.stringify(FIREBASE_CONFIG).includes('ضع_هنا')){bad('لم تُملأ إعدادات Firebase في ملف config.js بعد.');return;}
 (function(){
 firebase.initializeApp(FIREBASE_CONFIG);
-const APP_VERSION=10; // version of this installed app (compared with the version the admin publishes)
+const APP_VERSION=11; // version of this installed app (compared with the version the admin publishes)
 const auth=firebase.auth(), db=firebase.firestore();
 const SID=Math.random().toString(36).slice(2)+Date.now().toString(36);
 const $=id=>document.getElementById(id);
@@ -121,6 +123,10 @@ const ERR={'auth/invalid-credential':'اسم المستخدم أو كلمة ال
   'auth/user-not-found':'اسم المستخدم أو كلمة المرور غير صحيحة.','auth/invalid-email':'اسم المستخدم غير صحيح.',
   'auth/user-disabled':'هذا الحساب موقوف. تواصل مع الأستاذ.','auth/too-many-requests':'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.',
   'auth/network-request-failed':'لا يوجد اتصال بالإنترنت.'};
+// contact card on the login screen (set by the teacher in the admin app)
+db.collection('public').doc('contact').get().then(d=>{if(!d.exists||!d.data().phone)return;const c=d.data(),ph=c.phone.replace(/[^0-9+]/g,''),
+  intl=ph.startsWith('+')?ph.slice(1):ph.startsWith('0')?'213'+ph.slice(1):ph,el=$('ct');
+  el.innerHTML=(c.msg?'<div class="ctm">'+c.msg.replace(/</g,'&lt;')+'</div>':'')+'<div class="ctn" dir="ltr">'+ph+'</div><div class="ctb"><a class="ca" href="tel:'+ph+'">📞 اتصال</a><a class="cw" href="https://wa.me/'+intl+'">💬 واتساب</a></div>';el.hidden=false;}).catch(()=>{});
 $('lf').onsubmit=e=>{e.preventDefault();let u=$('em').value.trim().toLowerCase();if(!u.includes('@'))u+='@'+USER_DOMAIN;
   $('bt').disabled=true;$('msg').textContent='';
   auth.signInWithEmailAndPassword(u,$('pw').value).catch(er=>{$('msg').textContent=ERR[er.code]||'تعذر الدخول ('+er.code+')';$('bt').disabled=false;});};
@@ -193,7 +199,7 @@ function startApp(p,name){
   const st=document.createElement('style');st.textContent=p.css;document.head.appendChild(st);
   $('app').innerHTML=p.html;
   const sc=document.createElement('script');sc.textContent=p.js;document.body.appendChild(sc);
-  const wm=document.createElement('div');wm.id='wm';wm.innerHTML='<b>م ب</b><span>الأستاذ مسلم بلعالم</span>';document.body.appendChild(wm);
+  const wm=document.createElement('div');wm.id='wm';wm.innerHTML='<b>م ب</b><span>الأستاذ<br>مسلم بلعالم</span>';document.body.appendChild(wm);
   const who=document.createElement('div');who.id='who';who.textContent='👤 '+name;document.body.appendChild(who);
   const b=document.createElement('button');b.id='out';b.textContent='خروج';b.onclick=()=>auth.signOut();document.body.appendChild(b);
   document.addEventListener('contextmenu',e=>e.preventDefault());

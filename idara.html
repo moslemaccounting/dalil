@@ -181,10 +181,18 @@ window.APP_HOSTS = [];
     <div class="card">
       <h2>📥 تحديث تطبيق التلاميذ (APK)</h2>
       <div style="color:var(--m);font-size:13.5px">نادر الحاجة. ضع ملف APK الجديد في Google Drive (مشاركة: أي شخص لديه الرابط)، والصق الرابط هنا مع رقم النسخة الجديدة. يظهر للتلاميذ زر "تحديث الآن".</div>
-      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="10" disabled></div></div>
+      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="11" disabled></div></div>
       <label>رابط التحميل</label><input id="au" class="u" placeholder="https://drive.google.com/...">
       <div class="bts"><button class="btn g" id="asave">نشر التحديث</button><button class="btn s" id="aclr">إلغاء</button></div>
       <div class="msg" id="am2"></div>
+    </div>
+    <div class="card">
+      <h2>📞 التواصل في شاشة الدخول</h2>
+      <div style="color:var(--m);font-size:13.5px">يظهر في شاشة الدخول لكل من يفتح التطبيق، مع زر اتصال وزر واتساب. اتركه فارغاً واضغط «إلغاء» لإخفائه.</div>
+      <label>رقم الهاتف</label><input id="cph" class="u" inputmode="tel" placeholder="مثلاً 0661234567">
+      <label>الرسالة</label><input id="cmsg" placeholder="مثلاً: للاشتراك أو الفترة التجريبية تواصل معي">
+      <div class="bts"><button class="btn g" id="csave">حفظ</button><button class="btn s" id="cclr">إلغاء (إخفاء)</button></div>
+      <div class="msg" id="cm"></div>
     </div>
   </div>
 </main>
@@ -329,6 +337,12 @@ function renderS(){
   $('wins').querySelectorAll('[data-i]').forEach(b=>b.onclick=async()=>{const k=+b.dataset.i;await gref().set({windows:(G.windows||[]).filter(x=>x.from.seconds!==k)},{merge:true});});
 }
 const say=(id,ok,t)=>{$(id).className='msg '+(ok?'ok':'err');$(id).textContent=t;};
+// contact shown on the students' login screen (public document)
+const cref=()=>db.collection('public').doc('contact');
+cref().get().then(d=>{if(d.exists){$('cph').value=d.data().phone||'';$('cmsg').value=d.data().msg||'';}}).catch(()=>{});
+$('csave').onclick=async()=>{const ph=$('cph').value.replace(/[^0-9+]/g,''),m=$('cmsg').value.trim();if(!ph){say('cm',0,'اكتب رقم الهاتف.');return;}
+  try{await cref().set({phone:ph,msg:m});say('cm',1,'✔ يظهر الآن في شاشة الدخول.');}catch(e){say('cm',0,e.code==='permission-denied'?'حدّث قواعد Firestore أولاً (أضف قسم public).':'خطأ: '+e.code);}};
+$('cclr').onclick=async()=>{try{await cref().delete();$('cph').value='';$('cmsg').value='';say('cm',1,'✔ أُخفي من شاشة الدخول.');}catch(e){say('cm',0,'خطأ: '+e.code);}};
 $('pbtn').onclick=async()=>{try{const p=!G.paused;await gref().set({paused:p,pauseMsg:$('pmsg').value.trim()},{merge:true});say('pm2',1,p?'⏸ أُوقف التطبيق عند كل التلاميذ.':'▶ عاد التطبيق للعمل.');}catch(e){say('pm2',0,'خطأ: '+e.code);}};
 $('wadd').onclick=async()=>{const d=$('wd').value,f=$('wf').value,t=$('wt').value;if(!d||!f||!t){say('wm2',0,'اختر اليوم والساعتين.');return;}
   const P=d.split('-'),F=f.split(':'),T=t.split(':'),a=new Date(+P[0],+P[1]-1,+P[2],+F[0],+F[1]),b=new Date(+P[0],+P[1]-1,+P[2],+T[0],+T[1]);
