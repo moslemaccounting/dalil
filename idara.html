@@ -44,7 +44,7 @@ input.u{direction:ltr;text-align:left}
 .sst{border-radius:14px;padding:10px;text-align:center;font-weight:800;font-size:16px;margin:10px 0}.sst small{display:block;font-size:13px;font-weight:700;opacity:.85}
 .sst.t{background:#fff3d6;color:#8a5a00}.sst.a{background:#e5f4ea;color:#2f8f5b}.sst.e{background:#fbe9e7;color:#b83a3a}.sst.x{background:#eee;color:#555}
 .sg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.sb{border:0;border-radius:14px;padding:9px 4px;font:inherit;font-weight:800;font-size:14px;line-height:1.45;cursor:pointer}
-.sb small{display:block;font-weight:700;font-size:11.5px;opacity:.8}.sb.y{background:#fff3d6;color:#8a5a00}.sb.gr{background:#e5f4ea;color:#2f8f5b}.sb.d{background:#eee;color:#555}
+.sb small{display:block;font-weight:700;font-size:11.5px;opacity:.8}.sb.y{background:#fff3d6;color:#8a5a00}.sb.gr{background:#e5f4ea;color:#2f8f5b}.sb.d{background:#eee;color:#555}.sb.bl{background:#e6effa;color:#2f6fb0}
 .bn2{display:flex;gap:6px;align-items:center;margin-top:6px}.bn2 input{flex:1}.bn2 b{width:22px;color:var(--m);text-align:center}
 .bres{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}.bres td{border-bottom:1px solid var(--l);padding:6px 3px}
 #prt{display:none}
@@ -288,19 +288,26 @@ function devHtml(u){const ss=SS[u.id];if(!ss||!ss.dev)return '<div id="dv"><h3>�
    (ss.blocked?'<br><span style="color:#fff;background:#b83a3a;border-radius:8px;padding:1px 8px;font-weight:800">⛔ أُوقف تلقائياً بعد 3 محاولات</span>':'')+
    '</div><button class="btn s" id="anew" style="margin-top:8px">📱 السماح بهاتف جديد'+(ss.blocked?' وإلغاء التوقيف':'')+'</button></div>';}
 function toast(t){let d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2b2321;color:#fff;padding:10px 18px;border-radius:12px;z-index:99;font-weight:700';document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
+function isSub(u){return u.active&&!u.trial&&u.exp&&u.exp.toDate()>now();}
+function startOf(u){return u.start?u.start.toDate():(u.created&&u.created.toDate?u.created.toDate():now());}
+// k: t3/t7 trial from today · m1/m3/m6 "make it" from the subscription start (correction) · sy end of school year · r… renewal after the current end
 function subDate(u,k){if(k==='sy')return syEnd();if(k[0]==='t')return addDur(now(),k);
-  const base=(!u.trial&&u.exp&&u.exp.toDate()>now())?u.exp.toDate():now();return addDur(base,k);}
+  if(k[0]==='r'){const e=u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();return addDur(e,k.slice(1));}
+  if(isSub(u)){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(now(),k);}
 function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Math.round((e-t)/864e5)):0;
   let cls,tt,sub;
   if(!u.active){cls='x';tt='⏸ موقوف';sub='اضغط «تفعيل الحساب» في الأسفل';}
   else if(e&&e<t){cls='e';tt='⛔ منتهٍ';sub='انتهى يوم <span dir="ltr">'+dmy(e)+'</span>';}
   else if(u.trial){cls='t';tt='🎁 تجريبي';sub='ينتهي <span dir="ltr">'+dmy(e)+'</span> — باقي '+dl+(dl===1?' يوم':' أيام');}
-  else{cls='a';tt='✅ مشترك';sub='حتى <span dir="ltr">'+(e?dmy(e):'—')+'</span> — باقي '+dl+' يوماً';}
+  else{cls='a';tt='✅ مشترك';sub='من <span dir="ltr">'+dmy(startOf(u))+'</span> حتى <span dir="ltr">'+(e?dmy(e):'—')+'</span> — باقي '+dl+' يوماً';}
   const B=(k,ic,l,c)=>'<button class="sb '+c+'" data-k="'+k+'">'+ic+' '+l+'<small>يصير حتى <span dir="ltr">'+dmy(subDate(u,k))+'</span></small></button>';
-  return '<div class="sst '+cls+'">'+tt+'<small>'+sub+'</small></div><h3>اضغط زراً واحداً لتغيير الاشتراك:</h3><div class="sg">'+
+  const sub1=isSub(u);
+  return '<div class="sst '+cls+'">'+tt+'<small>'+sub+'</small></div>'+
+    '<h3>'+(sub1?'تغيير المدة (تُحسب من بداية الاشتراك):':'اضغط زراً واحداً:')+'</h3><div class="sg">'+
     B('t3','🎁','تجربة 3 أيام','y')+B('t7','🎁','تجربة أسبوع','y')+B('m1','✅','شهر','gr')+B('m3','✅','3 أشهر','gr')+B('m6','✅','6 أشهر','gr')+B('sy','✅','حتى نهاية السنة','gr')+
     '<button class="sb d" id="dk">📅 تاريخ آخر<small>اختر بنفسك</small></button></div>'+
-    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div>';}
+    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div>'+
+    (sub1?'<h3>🔁 تجديد (يُضاف بعد نهاية الاشتراك):</h3><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div>':'');}
 function openU(id,msg){
   const u=users.find(x=>x.id===id);if(!u)return;cur=u;const s=state(u);
   if(!msg)db.collection('sessions').doc(id).get().then(d=>{if(d.exists){SS[id]=d.data();const o=$('dv');if(o)o.outerHTML=devHtml(u);render();}}).catch(()=>{});
@@ -316,11 +323,13 @@ function openU(id,msg){
   $('shx').onclick=()=>$('sheet').classList.add('hide');
   $('cp').onclick=e=>copy(credText(u),e.target);
   $('sh2').onclick=()=>share(credText(u));
-  $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t';
-    await upd(u,{exp:TS.fromDate(d),active:true,trial:tr},tr?'✔ صار تجريبياً حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
+  $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t',was=isSub(u);
+    const ch={exp:TS.fromDate(d),active:true,trial:tr};
+    if(!tr&&(!was||(k[0]==='m'&&addDur(startOf(u),k)<=now())))ch.start=TS.fromDate(now());
+    await upd(u,ch,tr?'✔ صار تجريبياً حتى '+dmy(d):k[0]==='r'?'✔ جُدّد حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
   $('dk').onclick=()=>$('dkw').classList.toggle('hide');
   $('eds').onclick=async()=>{const v=$('ed').value;if(!v){$('shm').textContent='اختر تاريخاً.';return;}const p=v.split('-');const d=new Date(+p[0],+p[1]-1,+p[2],23,59);
-    await upd(u,{exp:TS.fromDate(d),active:true,trial:false},'✔ صار صالحاً حتى '+dmy(d));};
+    const ch={exp:TS.fromDate(d),active:true,trial:false};if(!isSub(u))ch.start=TS.fromDate(now());await upd(u,ch,'✔ صار مشتركاً حتى '+dmy(d));};
   $('tg').onclick=async()=>upd(u,{active:!u.active},u.active?'⏸ أُوقف الحساب (يُطرد التلميذ فوراً)':'▶ فُعّل الحساب');
   let dc=0;$('del').onclick=async e=>{if(!dc){dc=1;e.target.textContent='اضغط مرة أخرى للتأكيد';return;}
     e.target.disabled=true;e.target.textContent='جاري الحذف...';
@@ -352,7 +361,7 @@ function mkPw(){const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i
 function expOf(k,dateV){if(k==='sy')return syEnd();if(k==='dt'){const p=(dateV||'').split('-');return p.length===3?new Date(+p[0],+p[1]-1,+p[2],23,59):null;}return addDur(now(),k);}
 async function createOne(nm,un,pw,k,exp){let u=un,tries=0;
   for(;;){try{const cr=await sec.auth().createUserWithEmailAndPassword(u+'@'+USER_DOMAIN,pw);const uid=cr.user.uid;await sec.auth().signOut();
-      const doc={name:nm,u:u,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),created:SV()};await db.collection('users').doc(uid).set(doc);
+      const doc={name:nm,u:u,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV()};await db.collection('users').doc(uid).set(doc);
       const o=Object.assign({id:uid},doc,{created:TS.fromDate(now())});users.push(o);return o;}
     catch(e){if(e.code==='auth/email-already-in-use'&&tries<8){tries++;u=un.replace(/\d+$/,'')+(tries+1);continue;}throw e;}}}
 // single form: generate from the name unless edited by hand
@@ -387,7 +396,7 @@ $('add').onclick=async()=>{
   m.textContent='جاري الإنشاء...';
   try{
     const cr=await sec.auth().createUserWithEmailAndPassword(un+'@'+USER_DOMAIN,pw);const uid=cr.user.uid;await sec.auth().signOut();
-    const doc={name:nm,u:un,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),created:SV()};
+    const doc={name:nm,u:un,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV()};
     await db.collection('users').doc(uid).set(doc);
     const u=Object.assign({id:uid},doc,{created:TS.fromDate(now())});users.push(u);render();
     m.className='msg ok';m.innerHTML='✔ تم إنشاء الحساب';$('nm').value='';$('un').value='';$('up').value='';
