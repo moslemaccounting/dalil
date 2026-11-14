@@ -132,6 +132,7 @@ window.APP_HOSTS = [];
   <div id="tU" class="card tab">
     <input id="q" placeholder="🔍 بحث بالاسم أو اسم المستخدم">
     <div class="row" style="margin-top:8px"><select id="fl"><option value="">الكل</option><option value="a">المفعّلون</option><option value="e">المنتهون</option><option value="x">الموقوفون</option><option value="t">🎁 التجريبيون</option></select><select id="so"><option value="new">الأحدث أولاً</option><option value="exp">الأقرب انتهاءً</option><option value="nm">بالاسم</option></select></div>
+    <button class="btn s" id="rfull" style="margin-top:8px;font-size:13px;padding:7px">🔄 تحديث كامل للقائمة</button>
     <div id="list" style="margin-top:6px"><div class="msg">جاري التحميل...</div></div>
   </div>
 
@@ -252,11 +253,27 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.que
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('hide',t.id!==b.dataset.t));});
 
 /* ---------- students ---------- */
-async function load(){
-  try{const s=await db.collection('users').get();users=s.docs.map(d=>Object.assign({id:d.id},d.data()));render();}
-  catch(e){$('list').innerHTML='<div class="msg err">لا توجد صلاحية: تأكد أن بريدك مكتوب في قواعد Firestore ('+e.code+')</div>';}
-  try{const q=await db.collection('sessions').get();q.docs.forEach(d=>SS[d.id]=d.data());render();}catch(_){}
+// the student list is kept on this phone: only students changed since the last opening are read again (saves reads)
+const ser=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&typeof v.toMillis==='function'?{__ts:v.toMillis()}:(v&&v.seconds!=null&&v.nanoseconds!=null&&Object.keys(v).length===2?{__ts:v.seconds*1000}:v));
+const des=t=>JSON.parse(t,(k,v)=>v&&v.__ts!=null?TS.fromMillis(v.__ts):v);
+function saveCache(){try{localStorage.setItem('adm_cache',ser({u:users,s:SS,t:syncT}));}catch(_){}}
+let syncT=0;
+async function load(full){
+  let c=null;if(!full){try{c=des(localStorage.getItem('adm_cache')||'null');}catch(_){c=null;}}
+  const t0=Date.now()+off-120000;
+  try{
+    if(c&&c.t){users=c.u||[];SS=c.s||{};render();
+      const q=await db.collection('users').where('mt','>',TS.fromMillis(c.t)).get();
+      q.docs.forEach(d=>{const o=Object.assign({id:d.id},d.data()),i=users.findIndex(x=>x.id===d.id);if(i>=0)users[i]=o;else users.push(o);});
+      const q2=await db.collection('sessions').where('at','>',TS.fromMillis(c.t)).get();q2.docs.forEach(d=>SS[d.id]=d.data());
+    } else {
+      const s=await db.collection('users').get();users=s.docs.map(d=>Object.assign({id:d.id},d.data()));render();
+      try{const q=await db.collection('sessions').get();SS={};q.docs.forEach(d=>SS[d.id]=d.data());}catch(_){}
+    }
+    syncT=t0;saveCache();render();
+  }catch(e){if(!users||!users.length)$('list').innerHTML='<div class="msg err">لا توجد صلاحية: تأكد أن بريدك مكتوب في قواعد Firestore ('+e.code+')</div>';}
 }
+$('rfull').onclick=async()=>{$('rfull').disabled=true;await load(true);$('rfull').disabled=false;toast('✔ حُدّثت القائمة');};
 function state(u){if(!u.active)return 'x';if(u.exp&&u.exp.toDate()<now())return 'e';return 'a';}
 const SL={a:'مفعّل',e:'منتهٍ',x:'موقوف'};
 function left(u){if(!u.exp)return '';const d=Math.ceil((u.exp.toDate()-now())/864e5);return d>0?'باقي '+d+' يوم':'';}
@@ -276,7 +293,7 @@ function copy(t,el){try{if(window.Android&&Android.copy){Android.copy(t);}else n
 function share(t){try{if(window.Android&&Android.share)Android.share(t);else if(navigator.share)navigator.share({text:t});}catch(e){}}
 function syEnd(){const n=now();let y=n.getFullYear();if(n.getMonth()>5||(n.getMonth()===5&&n.getDate()>10))y++;return new Date(y,5,10,23,59);}
 function addDur(base,k){const d=new Date(base);if(k[0]==='d'||k[0]==='t')d.setDate(d.getDate()+(+k.slice(1)));else if(k[0]==='m')d.setMonth(d.getMonth()+(+k.slice(1)));d.setHours(23,59,0,0);return d;}
-async function upd(u,data,msg){await db.collection('users').doc(u.id).update(data);Object.assign(u,data);render();openU(u.id,msg);}
+async function upd(u,data,msg){data.mt=SV();await db.collection('users').doc(u.id).update(data);data.mt=TS.fromDate(now());Object.assign(u,data);saveCache();render();openU(u.id,msg);}
 
 
 function devHtml(u){const ss=SS[u.id];if(!ss||!ss.dev)return '<div id="dv"><h3>📱 الجهاز</h3><div style="color:#7a6f6a">لم يدخل التلميذ بعد.</div></div>';
@@ -340,7 +357,7 @@ function openU(id,msg){
       if(u.pw){try{const c=await sec.auth().signInWithEmailAndPassword(u.u+'@'+USER_DOMAIN,u.pw);await c.user.delete();}catch(_){}try{await sec.auth().signOut();}catch(_){}}
       try{await db.collection('sessions').doc(u.id).delete();}catch(_){}
       await db.collection('users').doc(u.id).delete();
-      users=users.filter(x=>x!==u);delete SS[u.id];render();$('sheet').classList.add('hide');toast('🗑 حُذف التلميذ نهائياً');
+      users=users.filter(x=>x!==u);delete SS[u.id];saveCache();render();$('sheet').classList.add('hide');toast('🗑 حُذف التلميذ نهائياً');
     }catch(er){e.target.disabled=false;e.target.textContent='🗑 حذف التلميذ';$('shm').textContent='تعذر الحذف: '+(er.code||er.message);}};
 }
 $('sheet').onclick=e=>{if(e.target.id==='sheet')$('sheet').classList.add('hide');};
@@ -365,8 +382,8 @@ function mkPw(){const c='abcdefghjkmnpqrstuvwxyz23456789';let s='';for(let i=0;i
 function expOf(k,dateV){if(k==='sy')return syEnd();if(k==='dt'){const p=(dateV||'').split('-');return p.length===3?new Date(+p[0],+p[1]-1,+p[2],23,59):null;}return addDur(now(),k);}
 async function createOne(nm,un,pw,k,exp){let u=un,tries=0;
   for(;;){try{const cr=await sec.auth().createUserWithEmailAndPassword(u+'@'+USER_DOMAIN,pw);const uid=cr.user.uid;await sec.auth().signOut();
-      const doc={name:nm,u:u,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV()};await db.collection('users').doc(uid).set(doc);
-      const o=Object.assign({id:uid},doc,{created:TS.fromDate(now())});users.push(o);return o;}
+      const doc={name:nm,u:u,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV(),mt:SV()};await db.collection('users').doc(uid).set(doc);
+      const o=Object.assign({id:uid},doc,{created:TS.fromDate(now()),mt:TS.fromDate(now())});users.push(o);saveCache();return o;}
     catch(e){if(e.code==='auth/email-already-in-use'&&tries<8){tries++;u=un.replace(/\d+$/,'')+(tries+1);continue;}throw e;}}}
 // single form: generate from the name unless edited by hand
 ['un','up'].forEach(id=>$(id).addEventListener('input',()=>$(id).dataset.man='1'));
@@ -400,9 +417,9 @@ $('add').onclick=async()=>{
   m.textContent='جاري الإنشاء...';
   try{
     const cr=await sec.auth().createUserWithEmailAndPassword(un+'@'+USER_DOMAIN,pw);const uid=cr.user.uid;await sec.auth().signOut();
-    const doc={name:nm,u:un,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV()};
+    const doc={name:nm,u:un,pw:pw,active:true,trial:k[0]==='t',exp:TS.fromDate(exp),start:TS.fromDate(now()),created:SV(),mt:SV()};
     await db.collection('users').doc(uid).set(doc);
-    const u=Object.assign({id:uid},doc,{created:TS.fromDate(now())});users.push(u);render();
+    const u=Object.assign({id:uid},doc,{created:TS.fromDate(now()),mt:TS.fromDate(now())});users.push(u);saveCache();render();
     m.className='msg ok';m.innerHTML='✔ تم إنشاء الحساب';$('nm').value='';$('un').value='';$('up').value='';
     openU(uid,'✔ حساب جديد — انسخ المعلومات أو شاركها مع التلميذ');
   }catch(e){m.className='msg err';m.textContent=e.code==='auth/email-already-in-use'?'اسم المستخدم مستعمل، اختر اسماً آخر.':e.code==='auth/admin-restricted-operation'||e.code==='auth/operation-not-allowed'?'إنشاء الحسابات مقفل في Firebase.':'خطأ: '+(e.code||e.message);}
