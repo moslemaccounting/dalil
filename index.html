@@ -109,7 +109,7 @@ if(typeof FIREBASE_CONFIG==='undefined'){bad('ملف config.js غير موجود
 if(JSON.stringify(FIREBASE_CONFIG).includes('ضع_هنا')){bad('لم تُملأ إعدادات Firebase في ملف config.js بعد.');return;}
 (function(){
 firebase.initializeApp(FIREBASE_CONFIG);
-const APP_VERSION=9; // version of this installed app (compared with the version the admin publishes)
+const APP_VERSION=10; // version of this installed app (compared with the version the admin publishes)
 const auth=firebase.auth(), db=firebase.firestore();
 const SID=Math.random().toString(36).slice(2)+Date.now().toString(36);
 const $=id=>document.getElementById(id);
@@ -174,9 +174,14 @@ auth.onAuthStateChanged(async user=>{
     unsub.push(db.collection('users').doc(user.uid).onSnapshot(d=>{U=d.data();if(!U||!U.active)alertOut('أُوقف حسابك. تواصل مع الأستاذ.');else applyAll();},()=>{}));
     try{const g=await db.collection('settings').doc('global').get();G=g.exists?g.data():{};}catch(_){G={};}
     unsub.push(db.collection('settings').doc('global').onSnapshot(s=>{G=s.exists?s.data():{};applyAll();},()=>{}));
-    const doc=await db.collection('app').doc('main').get();
-    if(!doc.exists){$('app').innerHTML='<div class="loading">لم تُرفع الحاسبة بعد.</div>';return;}
-    startApp(doc.data(),U.name||user.email.split('@')[0]);
+    // the calculator is kept on the phone; it is downloaded again only when the teacher uploads a new version
+    let P=null;
+    try{const vd=await db.collection('app').doc('ver').get();const v=vd.exists?vd.data().version:null;
+      if(v){try{const c=JSON.parse(localStorage.getItem('dl_app')||'null');if(c&&c.version===v)P=c;}catch(_){}}}catch(_){}
+    if(!P){const doc=await db.collection('app').doc('main').get();
+      if(!doc.exists){$('app').innerHTML='<div class="loading">لم تُرفع الحاسبة بعد.</div>';return;}
+      P=doc.data();try{localStorage.setItem('dl_app',JSON.stringify({css:P.css,html:P.html,js:P.js,version:P.version}));}catch(_){}}
+    startApp(P,U.name||user.email.split('@')[0]);
     applyAll();setInterval(applyAll,20000);
   }catch(er){if(er.code==='permission-denied'){alertOut('اشتراكك غير مفعّل أو منتهٍ. تواصل مع الأستاذ.');return;}$('app').innerHTML='<div class="loading">تعذر التحميل: '+(er.code||er.message)+'</div>';}
 });

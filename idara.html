@@ -181,7 +181,7 @@ window.APP_HOSTS = [];
     <div class="card">
       <h2>📥 تحديث تطبيق التلاميذ (APK)</h2>
       <div style="color:var(--m);font-size:13.5px">نادر الحاجة. ضع ملف APK الجديد في Google Drive (مشاركة: أي شخص لديه الرابط)، والصق الرابط هنا مع رقم النسخة الجديدة. يظهر للتلاميذ زر "تحديث الآن".</div>
-      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="8" disabled></div></div>
+      <div class="row"><div><label>رقم النسخة الجديدة</label><input id="av" inputmode="numeric" placeholder="مثلاً 7"></div><div><label>نسخة التلاميذ الحالية</label><input value="10" disabled></div></div>
       <label>رابط التحميل</label><input id="au" class="u" placeholder="https://drive.google.com/...">
       <div class="bts"><button class="btn g" id="asave">نشر التحديث</button><button class="btn s" id="aclr">إلغاء</button></div>
       <div class="msg" id="am2"></div>
@@ -342,10 +342,11 @@ $('aclr').onclick=async()=>{try{await gref().set({apkVersion:0,apkUrl:''},{merge
 
 /* ---------- calculator upload ---------- */
 async function info(){$('pe').textContent=(window.APP_PAYLOAD?'النسخة المدمجة في هذا التطبيق: '+window.APP_PAYLOAD.version:'رفع الحاسبة يتم من تطبيق الأندرويد فقط');
-  try{const d=await db.collection('app').doc('main').get();$('pv').textContent=d.exists?'النسخة عند التلاميذ: '+(d.data().version||'—'):'لم تُرفع الحاسبة بعد.';}catch(e){}}
+  try{const d=await db.collection('app').doc('ver').get();$('pv').textContent=d.exists?'النسخة عند التلاميذ: '+(d.data().version||'—'):'ارفع الحاسبة مرة واحدة من هذه النسخة.';}catch(e){}}
 $('up1').onclick=async()=>{const m=$('pm');m.className='msg';m.textContent='جاري الرفع...';
   try{const p=window.APP_PAYLOAD;if(!p)throw{message:'رفع الحاسبة يتم من تطبيق الإدارة على الأندرويد فقط.'};
     await db.collection('app').doc('main').set({css:p.css,html:p.html,js:p.js,version:p.version||'',at:SV()});
+    await db.collection('app').doc('ver').set({version:p.version||'',at:SV()});
     m.className='msg ok';m.textContent='✔ تم رفع الحاسبة لكل التلاميذ';info();
   }catch(e){m.className='msg err';m.textContent='خطأ: '+(e.code||e.message);}};
 })();
