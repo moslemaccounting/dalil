@@ -111,7 +111,7 @@ if(typeof FIREBASE_CONFIG==='undefined'){bad('ملف config.js غير موجود
 if(JSON.stringify(FIREBASE_CONFIG).includes('ضع_هنا')){bad('لم تُملأ إعدادات Firebase في ملف config.js بعد.');return;}
 (function(){
 firebase.initializeApp(FIREBASE_CONFIG);
-const APP_VERSION=11; // version of this installed app (compared with the version the admin publishes)
+const APP_VERSION=12; // version of this installed app (compared with the version the admin publishes)
 const auth=firebase.auth(), db=firebase.firestore();
 const SID=Math.random().toString(36).slice(2)+Date.now().toString(36);
 const $=id=>document.getElementById(id);
@@ -124,9 +124,11 @@ const ERR={'auth/invalid-credential':'اسم المستخدم أو كلمة ال
   'auth/user-disabled':'هذا الحساب موقوف. تواصل مع الأستاذ.','auth/too-many-requests':'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.',
   'auth/network-request-failed':'لا يوجد اتصال بالإنترنت.'};
 // contact card on the login screen (set by the teacher in the admin app)
-db.collection('public').doc('contact').get().then(d=>{if(!d.exists||!d.data().phone)return;const c=d.data(),ph=c.phone.replace(/[^0-9+]/g,''),
-  intl=ph.startsWith('+')?ph.slice(1):ph.startsWith('0')?'213'+ph.slice(1):ph,el=$('ct');
-  el.innerHTML=(c.msg?'<div class="ctm">'+c.msg.replace(/</g,'&lt;')+'</div>':'')+'<div class="ctn" dir="ltr">'+ph+'</div><div class="ctb"><a class="ca" href="tel:'+ph+'">📞 اتصال</a><a class="cw" href="https://wa.me/'+intl+'">💬 واتساب</a></div>';el.hidden=false;}).catch(()=>{});
+function showCt(c){const el=$('ct');if(!c||!c.phone){el.hidden=true;return;}const ph=c.phone.replace(/[^0-9+]/g,''),
+  intl=ph.startsWith('+')?ph.slice(1):ph.startsWith('0')?'213'+ph.slice(1):ph;
+  el.innerHTML=(c.msg?'<div class="ctm">'+c.msg.replace(/</g,'&lt;')+'</div>':'')+'<div class="ctn" dir="ltr">'+ph+'</div><div class="ctb"><a class="ca" href="tel:'+ph+'">📞 اتصال</a><a class="cw" href="https://wa.me/'+intl+'">💬 واتساب</a></div>';el.hidden=false;}
+try{showCt(JSON.parse(localStorage.getItem('dl_ct')||'null'));}catch(_){}
+db.collection('public').doc('contact').get().then(d=>{const c=d.exists?d.data():null;try{localStorage.setItem('dl_ct',JSON.stringify(c));}catch(_){}showCt(c);}).catch(()=>{});
 $('lf').onsubmit=e=>{e.preventDefault();let u=$('em').value.trim().toLowerCase();if(!u.includes('@'))u+='@'+USER_DOMAIN;
   $('bt').disabled=true;$('msg').textContent='';
   auth.signInWithEmailAndPassword(u,$('pw').value).catch(er=>{$('msg').textContent=ERR[er.code]||'تعذر الدخول ('+er.code+')';$('bt').disabled=false;});};
