@@ -328,8 +328,8 @@ function devHtml(u){const ss=SS[u.id];if(!ss||!ss.dev)return '<div id="dv"><h3>�
 function toast(t){let d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#2b2321;color:#fff;padding:10px 18px;border-radius:12px;z-index:99;font-weight:700';document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
 function isSub(u){return u.active&&!u.trial&&u.exp&&u.exp.toDate()>now();}
 function startOf(u){return u.start?u.start.toDate():(u.created&&u.created.toDate?u.created.toDate():now());}
-// k: t3/t7 trial from today · m1/m3/m6 "make it" from the subscription start (correction) · sy end of school year · r… renewal after the current end
-function subDate(u,k){if(k==='sy')return syEnd();if(k[0]==='t')return addDur(now(),k);
+// k: t3/t7 trial from the trial start (a new trial starts today) · m1/m3/m6 "make it" from the subscription start (correction) · sy end of school year · r… renewal after the current end
+function subDate(u,k){if(k==='sy')return syEnd();if(k[0]==='t'){if(u.trial&&u.active){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(now(),k);}
   if(k[0]==='r'){const e=u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();return addDur(e,k.slice(1));}
   if(isSub(u)){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(now(),k);}
 function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Math.round((e-t)/864e5)):0;
@@ -363,7 +363,7 @@ function openU(id,msg){
   $('cp').onclick=e=>copy(credText(u),e.target);
   $('sh2').onclick=()=>share(credText(u));
   $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t',was=isSub(u);
-    const ch={exp:TS.fromDate(d),active:true,trial:tr};
+    const ch={exp:TS.fromDate(d),active:true,trial:tr};if(tr&&!(u.trial&&u.active))ch.start=TS.fromDate(now());
     if(!tr&&(!was||(k[0]==='m'&&addDur(startOf(u),k)<=now())))ch.start=TS.fromDate(now());
     await upd(u,ch,tr?'✔ صار تجريبياً حتى '+dmy(d):k[0]==='r'?'✔ جُدّد حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
   $('dk').onclick=()=>$('dkw').classList.toggle('hide');
