@@ -329,9 +329,12 @@ function toast(t){let d=document.createElement('div');d.textContent=t;d.style.cs
 function isSub(u){return u.active&&!u.trial&&u.exp&&u.exp.toDate()>now();}
 function startOf(u){return u.start?u.start.toDate():(u.created&&u.created.toDate?u.created.toDate():now());}
 // k: t3/t7 trial from the trial start (a new trial starts today) · m1/m3/m6 "make it" from the subscription start (correction) · sy end of school year · r… renewal after the current end
-function subDate(u,k){if(k==='sy')return syEnd();if(k[0]==='t'){if(u.trial&&u.active){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(now(),k);}
+// trial counted from the first trial day (kept in tst even if the account was switched to a subscription by mistake)
+function trialDate(u,k){const b=u.tst?u.tst.toDate():(u.trial?startOf(u):(u.created&&u.created.toDate?u.created.toDate():now()));const d=addDur(b,k);return d>now()?{d,b}:{d:addDur(now(),k),b:now()};}
+function subDate(u,k){if(k==='sy')return syEnd();if(k[0]==='x'){const e=u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();return addDur(e,'d'+k.slice(1));}if(k[0]==='t')return trialDate(u,k).d;
   if(k[0]==='r'){const e=u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();return addDur(e,k.slice(1));}
-  if(isSub(u)){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(now(),k);}
+  if(isSub(u)){const d=addDur(startOf(u),k);return d>now()?d:addDur(now(),k);}return addDur(trEnd(u),k);}
+function trEnd(u){return u.trial&&u.active&&u.exp&&u.exp.toDate()>now()?u.exp.toDate():now();}
 function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Math.round((e-t)/864e5)):0;
   let cls,tt,sub;
   if(!u.active){cls='x';tt='⏸ موقوف';sub='اضغط «تفعيل الحساب» في الأسفل';}
@@ -339,14 +342,14 @@ function subHtml(u){const t=now(),e=u.exp?u.exp.toDate():null,dl=e?Math.max(0,Ma
   else if(u.trial){cls='t';tt='🎁 تجريبي';sub='ينتهي <span dir="ltr">'+dmy(e)+'</span> — باقي '+dl+(dl===1?' يوم':' أيام');}
   else{cls='a';tt='✅ مشترك';sub='من <span dir="ltr">'+dmy(startOf(u))+'</span> حتى <span dir="ltr">'+(e?dmy(e):'—')+'</span> — باقي '+dl+' يوماً';}
   const B=(k,ic,l,c)=>'<button class="sb '+c+'" data-k="'+k+'">'+ic+' '+l+'<small>يصير حتى <span dir="ltr">'+dmy(subDate(u,k))+'</span></small></button>';
-  const sub1=isSub(u);
+  const sub1=isSub(u),tr1=u.trial&&u.active&&e&&e>t;
   return '<div class="sst '+cls+'">'+tt+'<small>'+sub+'</small></div>'+
-    '<div class="sg" style="margin-bottom:8px"><button class="sb big" data-open="spe">✏️ '+(sub1?'تعديل الاشتراك':'تفعيل / تجربة')+'</button>'+(sub1?'<button class="sb big bl" data-open="spr">🔁 تجديد</button>':'')+'</div>'+
+    '<div class="sg" style="margin-bottom:8px"><button class="sb big" data-open="spe">✏️ '+(sub1?'تعديل الاشتراك':'تفعيل / تجربة')+'</button>'+(sub1?'<button class="sb big bl" data-open="spr">🔁 تجديد</button>':tr1?'<button class="sb big bl" data-open="spr">🔁 تجديد</button>':'')+'</div>'+
     '<div id="spe" class="hide"><div class="sg">'+
     B('t3','🎁','تجربة 3 أيام','y')+B('t7','🎁','تجربة أسبوع','y')+B('m1','✅','شهر','gr')+B('m3','✅','3 أشهر','gr')+B('m6','✅','6 أشهر','gr')+B('sy','✅','حتى نهاية السنة','gr')+
     '<button class="sb d" id="dk">📅 تاريخ آخر<small>اختر بنفسك</small></button></div>'+
-    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button></div></div></div>'+
-    (sub1?'<div id="spr" class="hide"><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div></div>':'');}
+    '<div id="dkw" class="hide"><div class="row"><input type="date" id="ed"><button class="btn g" id="eds" style="margin-top:0">✅ حفظ كاشتراك</button><button class="btn" id="edt" style="margin-top:0;background:#d9a400">🎁 حفظ كتجربة</button></div></div></div>'+
+    (tr1?'<div id="spr" class="hide"><div class="sg">'+B('x3','🎁','تجربة 3 أيام','y')+B('x7','🎁','تجربة أسبوع','y')+'</div></div>':'')+(sub1?'<div id="spr" class="hide"><div class="sg">'+B('rm1','🔁','تجديد شهر','bl')+B('rm3','🔁','تجديد 3 أشهر','bl')+B('rm6','🔁','تجديد 6 أشهر','bl')+B('sy','🔁','حتى نهاية السنة','bl')+'</div></div>':'');}
 function openU(id,msg){
   const u=users.find(x=>x.id===id);if(!u)return;cur=u;const s=state(u);
   if(!msg)db.collection('sessions').doc(id).get().then(d=>{if(d.exists){SS[id]=d.data();const o=$('dv');if(o)o.outerHTML=devHtml(u);render();}}).catch(()=>{});
@@ -362,11 +365,13 @@ function openU(id,msg){
   $('shx').onclick=()=>$('sheet').classList.add('hide');
   $('cp').onclick=e=>copy(credText(u),e.target);
   $('sh2').onclick=()=>share(credText(u));
-  $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t',was=isSub(u);
-    const ch={exp:TS.fromDate(d),active:true,trial:tr};if(tr&&!(u.trial&&u.active))ch.start=TS.fromDate(now());
-    if(!tr&&(!was||(k[0]==='m'&&addDur(startOf(u),k)<=now())))ch.start=TS.fromDate(now());
-    await upd(u,ch,tr?'✔ صار تجريبياً حتى '+dmy(d):k[0]==='r'?'✔ جُدّد حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
+  $('sh').querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const k=b.dataset.k,d=subDate(u,k),tr=k[0]==='t'||k[0]==='x',was=isSub(u);
+    const ch={exp:TS.fromDate(d),active:true,trial:tr};if(k[0]==='t'){const t=trialDate(u,k);ch.tst=TS.fromDate(t.b);}
+    if(!tr&&(!was||(k[0]==='m'&&addDur(startOf(u),k)<=now())))ch.start=TS.fromDate(u.trial?trEnd(u):now());
+    await upd(u,ch,k[0]==='x'?'✔ جُدّدت التجربة حتى '+dmy(d):tr?'✔ صار تجريبياً حتى '+dmy(d):k[0]==='r'?'✔ جُدّد حتى '+dmy(d):'✔ صار مشتركاً حتى '+dmy(d));});
   $('dk').onclick=()=>$('dkw').classList.toggle('hide');
+  $('edt').onclick=async()=>{const v=$('ed').value;if(!v){$('shm').textContent='اختر تاريخاً.';return;}const p=v.split('-');const d=new Date(+p[0],+p[1]-1,+p[2],23,59);
+    const ch={exp:TS.fromDate(d),active:true,trial:true};if(!u.tst&&!u.trial)ch.tst=TS.fromDate(now());await upd(u,ch,'✔ صار تجريبياً حتى '+dmy(d));};
   $('eds').onclick=async()=>{const v=$('ed').value;if(!v){$('shm').textContent='اختر تاريخاً.';return;}const p=v.split('-');const d=new Date(+p[0],+p[1]-1,+p[2],23,59);
     const ch={exp:TS.fromDate(d),active:true,trial:false};if(!isSub(u))ch.start=TS.fromDate(now());await upd(u,ch,'✔ صار مشتركاً حتى '+dmy(d));};
   $('tg').onclick=async()=>upd(u,{active:!u.active},u.active?'⏸ أُوقف الحساب (يُطرد التلميذ فوراً)':'▶ فُعّل الحساب');
